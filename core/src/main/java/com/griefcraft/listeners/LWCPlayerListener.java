@@ -54,7 +54,6 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -171,6 +170,9 @@ public class LWCPlayerListener implements Listener {
         return false;
     }
 
+    /*
+     * ASYLUM: No use for magnetic Chests     * 
+     * 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         if (event.isCancelled() || !LWC.ENABLED) {
@@ -186,6 +188,7 @@ public class LWCPlayerListener implements Listener {
             event.setCancelled(true);
         }
     }
+    */
 
 /*
     @EventHandler
@@ -234,9 +237,13 @@ public class LWCPlayerListener implements Listener {
             lwc.log("This is either an issue with your world or a bug in Bukkit");
             return;
         }
+        
+        //ASYLUM: Cancel Checks if Block is unrelated to LWC
+        if(!lwc.isProtectable(block))
+            return;        
 
         // Prevent players with lwc.deny from interacting with blocks that have an inventory
-        if (state instanceof InventoryHolder && lwc.isProtectable(block)) {
+        if (state instanceof InventoryHolder) {
             if (!lwc.hasPermission(player, "lwc.protect") && lwc.hasPermission(player, "lwc.deny") && !lwc.isAdmin(player) && !lwc.isMod(player)) {
                 lwc.sendLocale(player, "protection.interact.error.blocked");
                 event.setCancelled(true);
@@ -309,6 +316,9 @@ public class LWCPlayerListener implements Listener {
                 return;
             }
 
+            /*
+             * ASYLUM This check doesn't need to be done Twice, we dont need it anyway :P
+             *             
             // optional.onlyProtectIfOwnerIsOnline
             if (protection != null && !canAccess && lwc.getConfiguration().getBoolean("optional.onlyProtectWhenOwnerIsOnline", false)) {
                 Player owner = protection.getBukkitOwner();
@@ -318,7 +328,8 @@ public class LWCPlayerListener implements Listener {
                     return;
                 }
             }
-
+            * 
+            *             
             // optional.onlyProtectIfOwnerIsOffline
             if (protection != null && !canAccess && lwc.getConfiguration().getBoolean("optional.onlyProtectWhenOwnerIsOffline", false)) {
                 Player owner = protection.getBukkitOwner();
@@ -328,7 +339,8 @@ public class LWCPlayerListener implements Listener {
                     return;
                 }
             }
-
+            * 
+            */
             if (result == Module.Result.DEFAULT) {
                 canAccess = lwc.enforceAccess(player, protection, block, canAccess);
             }

@@ -73,6 +73,11 @@ public class LWCBlockListener implements Listener {
      */
     private final Set<Integer> blacklistedBlocks = new HashSet<Integer>();
 
+     /**
+     * ASYLUM: Array of relevant Blockfaces for checking wether there could be an Attachable affected or not
+     */
+    final static BlockFace[] BLOCKFACES = {BlockFace.SELF, BlockFace.DOWN, BlockFace.UP, BlockFace.EAST, BlockFace.NORTH, BlockFace.WEST, BlockFace.SOUTH};    
+    
     public LWCBlockListener(LWCPlugin plugin) {
         this.plugin = plugin;
         loadAndProcessConfig();
@@ -157,6 +162,7 @@ public class LWCBlockListener implements Listener {
         }
     }
 
+        
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         if (!LWC.ENABLED || event.isCancelled()) {
@@ -164,15 +170,29 @@ public class LWCBlockListener implements Listener {
         }
 
         LWC lwc = plugin.getLWC();
-        Player player = event.getPlayer();
+        
         Block block = event.getBlock();
 
-        boolean ignoreBlockDestruction = Boolean.parseBoolean(lwc.resolveProtectionConfiguration(block, "ignoreBlockDestruction"));
+        /*
+         * ASYLUM: Why should we handle seperate Blacklist? using Protectable instead.
+         * Old code: 
+            * boolean ignoreBlockDestruction = Boolean.parseBoolean(lwc.resolveProtectionConfiguration(block, "ignoreBlockDestruction"));
+            * if (ignoreBlockDestruction) {
+            *      return;
+            * }
+         */
+         if(!lwc.isProtectable(block)){
+            boolean protectable = false;
+            for (BlockFace bf : BLOCKFACES) {
+                if(lwc.isProtectable(block.getRelative(bf)))
+                    protectable = true;
+            }         
+            if(!protectable)
+                return; 
+         }
+                  
 
-        if (ignoreBlockDestruction) {
-            return;
-        }
-
+        Player player = event.getPlayer();
         ProtectionCache cache = lwc.getProtectionCache();
         String cacheKey = cache.cacheKey(block.getLocation());
 
@@ -327,9 +347,15 @@ public class LWCBlockListener implements Listener {
         }
 
         LWC lwc = plugin.getLWC();
-        Player player = event.getPlayer();
+        
         Block block = event.getBlockPlaced();
+        /**
+         * ASYLUM: Stop Checks if Block isnt related to LWC
+         */
+        if(!lwc.isProtectable(block))
+            return;   
 
+        Player player = event.getPlayer();
         ProtectionCache cache = lwc.getProtectionCache();
         String cacheKey = cache.cacheKey(block.getLocation());
 
@@ -363,11 +389,22 @@ public class LWCBlockListener implements Listener {
         if (!LWC.ENABLED) {
             return;
         }
+        
+        /*
+         * ASYUM: DONT REGISTER PROTECTION IF BLOCKPLACE IS CANCELLED
+         */
+        if(event.isCancelled())
+            return;
 
         LWC lwc = plugin.getLWC();
         Player player = event.getPlayer();
         Block block = event.getBlockPlaced();
 
+        // The placable block must be protectable
+        if (!lwc.isProtectable(block)) {
+            return;
+        }
+        
         // Update the cache if a protection is matched here
         Protection current = lwc.findProtection(block.getLocation());
         if (current != null) {
@@ -384,12 +421,7 @@ public class LWCBlockListener implements Listener {
                 return;
             }
         }
-
-        // The placable block must be protectable
-        if (!lwc.isProtectable(block)) {
-            return;
-        }
-
+        
         String autoRegisterType = lwc.resolveProtectionConfiguration(block, "autoRegister");
 
         // is it auto protectable?
